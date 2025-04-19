@@ -5,7 +5,7 @@ import cv2
 from ultralytics import YOLO
 
 # Load YOLOv8 model (replace with your actual model path)
-MODEL_PATH = 'best.pt'  # Make sure this model is in the same directory
+MODEL_PATH = 'yolov8n.pt'  # Make sure this model is in the same directory
 model = YOLO(MODEL_PATH)
 
 # App title
