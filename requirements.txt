@@ -5,3 +5,4 @@ Pillow
 numpy
 gdown
 torch
+pandas
