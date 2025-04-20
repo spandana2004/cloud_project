@@ -1,11 +1,9 @@
 streamlit
-opencv-python
-ultralytics
+opencv-python-headless
+ultralytics==8.0.198
 Pillow
 numpy
 gdown
 torch
 pandas
-opencv-python
 requests
-
