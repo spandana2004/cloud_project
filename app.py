@@ -1,5 +1,3 @@
-# app.py
-
 import streamlit as st
 from PIL import Image
 import numpy as np
@@ -10,25 +8,58 @@ from ultralytics import YOLO
 from datetime import datetime
 
 # -------------------------
-# CONFIGURATION & SETUP
+# CONFIGURATION
 # -------------------------
+
+st.set_page_config(page_title="GreenLoop", page_icon="♻️", layout="wide")
 
 DB_PATH = "data.db"
 IMG_DIR = "uploads"
 os.makedirs(IMG_DIR, exist_ok=True)
 
-# Organization credentials (demo)
 ORG_CREDENTIALS = {
     "ngo@example.org": "password123",
     "bbmp@example.gov": "bbmp_pass"
 }
 
-# Google Drive model link
 GDRIVE_ID = "1Y_uW_GrpJthpJwHcW_0nk8eszy-a_lBN"
 MODEL_URL = f"https://drive.google.com/uc?id={GDRIVE_ID}"
 MODEL_PATH = "best.pt"
 
-# Initialize SQLite
+# -------------------------
+# CUSTOM CSS
+# -------------------------
+
+def inject_css():
+    st.markdown("""
+        <style>
+            body { font-family: 'Segoe UI', sans-serif; }
+            .main { background-color: #f4f8f2; }
+            h1, h2, h3 { color: #2e7d32; }
+            .stButton button {
+                background-color: #2e7d32;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 0.6em 1em;
+                margin-top: 10px;
+            }
+            .stDownloadButton button {
+                background-color: #558b2f;
+                color: white;
+                border-radius: 6px;
+                margin-top: 5px;
+            }
+            footer { visibility: hidden; }
+        </style>
+    """, unsafe_allow_html=True)
+
+inject_css()
+
+# -------------------------
+# DATABASE SETUP
+# -------------------------
+
 def init_db():
     conn = sqlite3.connect(DB_PATH, check_same_thread=False)
     c = conn.cursor()
@@ -65,7 +96,7 @@ def load_model():
 model = load_model()
 
 # -------------------------
-# SESSION-STATE INITIALIZATION
+# SESSION INITIALIZATION
 # -------------------------
 
 if "logged_in" not in st.session_state:
@@ -79,7 +110,8 @@ if "logged_in" not in st.session_state:
 # -------------------------
 
 def login_page():
-    st.title("🔐 Login")
+    st.markdown("## 🔐 Welcome to GreenLoop")
+    st.caption("Empowering communities for smarter waste management.")
     user_type = st.radio("I am a:", ["Common User", "Organization"])
     if user_type == "Common User":
         name = st.text_input("Name")
@@ -108,7 +140,7 @@ def logout():
         st.session_state.pop(key, None)
 
 # -------------------------
-# DATABASE HELPERS
+# DATABASE FUNCTIONS
 # -------------------------
 
 def add_request(user_email, user_name, location, image_path, counts):
@@ -137,12 +169,8 @@ def accept_request(req_id, org_email):
     """, (org_email, ts, req_id))
     conn.commit()
 
-# -------------------------
-# NOTIFICATION PLACEHOLDER
-# -------------------------
-
 def notify_user(email, subject, message):
-    # Integrate real email/SMS API here
+    # You can later integrate an email API here
     print(f"[NOTIFY] To: {email}\nSubject: {subject}\n{message}")
 
 # -------------------------
@@ -150,8 +178,9 @@ def notify_user(email, subject, message):
 # -------------------------
 
 def user_upload_page():
-    st.header("🖼️ Upload Dumpster Image")
-    uploaded = st.file_uploader("Choose an image", type=["jpg","jpeg","png"])
+    st.markdown("## ♻️ GreenLoop — Smart Waste Reporting System")
+    st.subheader("🖼️ Upload Dumpster Image")
+    uploaded = st.file_uploader("Choose an image", type=["jpg", "jpeg", "png"])
     loc = st.text_input("Location of dumpster")
     if uploaded and loc:
         image = Image.open(uploaded).convert("RGB")
@@ -165,11 +194,10 @@ def user_upload_page():
                 counts = {}
                 for c_ in classes:
                     lbl = names[c_]
-                    counts[lbl] = counts.get(lbl,0) + 1
+                    counts[lbl] = counts.get(lbl, 0) + 1
                 ann = res.plot()
             st.image(ann, caption="Result", use_column_width=True)
 
-            # Save to disk & DB
             fname = f"{int(datetime.now().timestamp())}_{uploaded.name}"
             path = os.path.join(IMG_DIR, fname)
             Image.fromarray(ann).save(path)
@@ -179,12 +207,10 @@ def user_upload_page():
 
             st.success("✅ Saved to your requests.")
 
-            # Download CSV report
             df = pd.DataFrame([{"location": loc, **counts, "timestamp": datetime.now().isoformat()}])
             csv = df.to_csv(index=False).encode()
             st.download_button("📥 Download report (CSV)", csv, "report.csv")
 
-            # Notify NGO/BBMP
             if st.button("🔔 Notify BBMP/NGO"):
                 notify_user("ngo@example.org",
                             "New dumpster upload",
@@ -192,7 +218,7 @@ def user_upload_page():
                 st.info("Notification sent.")
 
 def user_history_page():
-    st.header("📋 My Requests")
+    st.markdown("## 📋 My Requests")
     df = get_user_requests(st.session_state.user_email)
     if df.empty:
         st.info("No requests yet.")
@@ -201,13 +227,12 @@ def user_history_page():
         st.markdown(f"**Request #{row.id}** — {row.timestamp}")
         st.markdown(f"- Location: {row.location}")
         counts = json.loads(row.counts_json)
-        for k,v in counts.items():
+        for k, v in counts.items():
             st.markdown(f"  - {k}: {v}")
         status = "✅ Accepted" if row.accepted else "⏳ Pending"
         st.markdown(f"- Status: **{status}**")
         if row.accepted:
             st.markdown(f"  - by: {row.accepted_by} on {row.accepted_time}")
-        # per-request CSV
         rep = pd.DataFrame([{
             "location": row.location,
             **counts,
@@ -225,7 +250,7 @@ def user_history_page():
 # -------------------------
 
 def org_dashboard_page():
-    st.header("📊 Organization Dashboard")
+    st.markdown("## 🏢 Organization Dashboard")
     df = get_pending_requests()
     if df.empty:
         st.info("No pending requests.")
@@ -235,7 +260,7 @@ def org_dashboard_page():
         st.markdown(f"- Location: {row.location}")
         st.image(Image.open(row.image_path), width=300)
         counts = json.loads(row.counts_json)
-        for k,v in counts.items():
+        for k, v in counts.items():
             st.markdown(f"  - {k}: {v}")
         if st.button(f"Accept #{row.id}", key=f"acc{row.id}"):
             accept_request(row.id, st.session_state.user_email)
@@ -244,21 +269,22 @@ def org_dashboard_page():
                         f"Your request at {row.location} will be collected by {st.session_state.user_email}.")
             st.success(f"Request #{row.id} accepted.")
         st.markdown("---")
+
     all_df = pd.read_sql("SELECT * FROM requests", conn)
-    st.download_button("Download all requests CSV",
-                       all_df.to_csv(index=False).encode(),
-                       "all_requests.csv")
+    st.download_button("Download all requests CSV", all_df.to_csv(index=False).encode(), "all_requests.csv")
 
 # -------------------------
-# MAIN APP FLOW
+# MAIN FLOW
 # -------------------------
 
 if not st.session_state.logged_in:
     login_page()
 else:
-    st.sidebar.write(f"👤 {st.session_state.user_type.upper()}: {st.session_state.user_email}")
+    st.sidebar.markdown("### 🌱 GreenLoop Navigation")
+    st.sidebar.success(f"👤 Logged in as {st.session_state.user_email}")
     if st.sidebar.button("Logout"):
         logout()
+        st.experimental_rerun()
     if st.session_state.user_type == "user":
         page = st.sidebar.radio("Go to", ["Upload", "My Requests"])
         if page == "Upload":
@@ -267,3 +293,11 @@ else:
             user_history_page()
     else:
         org_dashboard_page()
+
+# -------------------------
+# FOOTER
+# -------------------------
+
+st.markdown("""<hr style="margin-top:2em;">
+<p style='text-align:center; color: grey'>© 2025 GreenLoop. Built with ❤️ using Streamlit.</p>
+""", unsafe_allow_html=True)
