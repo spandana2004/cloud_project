@@ -299,5 +299,5 @@ else:
 # -------------------------
 
 st.markdown("""<hr style="margin-top:2em;">
-<p style='text-align:center; color: grey'>© 2025 GreenLoop. Built with ❤️ using Streamlit.</p>
+<p style='text-align:center; color: grey'>© 2025 GreenLoop. Developed by Spandana A P, Shravya P, Surbhi Sneha, Sridevi Shetty.</p>
 """, unsafe_allow_html=True)
