@@ -284,7 +284,7 @@ else:
     st.sidebar.success(f"👤 Logged in as {st.session_state.user_email}")
     if st.sidebar.button("Logout"):
         logout()
-        st.experimental_rerun()
+        st.rerun()
     if st.session_state.user_type == "user":
         page = st.sidebar.radio("Go to", ["Upload", "My Requests"])
         if page == "Upload":
